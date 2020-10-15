@@ -16,7 +16,7 @@
 
 package api.sampling.proposals
 
-import api.other.{IcpProjectionDirection, ModelSampling, TargetSampling}
+import api.other.{IcpProjectionDirection, LandmarkCorrespondence, ModelSampling, TargetSampling}
 import api.sampling.{ModelFittingParameters, ShapeParameters, SurfaceNoiseHelpers}
 import scalismo.common.{Field, NearestNeighborInterpolator, PointId}
 import scalismo.geometry._
@@ -30,6 +30,8 @@ import scalismo.utils.Memoize
 case class NonRigidIcpProposal(
                                 model: StatisticalMeshModel,
                                 target: TriangleMesh3D,
+                                modelLM: Seq[Landmark[_3D]],
+                                targetLM: Seq[Landmark[_3D]],
                                 stepLength: Double,
                                 tangentialNoise: Double,
                                 noiseAlongNormal: Double,
@@ -48,8 +50,9 @@ case class NonRigidIcpProposal(
   private lazy val interpolatedModel = model.gp.interpolate(NearestNeighborInterpolator())
 
   private val modelPoints = UniformMeshSampler3D(model.referenceMesh, numOfSamplePoints).sample().map(_._1)
-  private val modelIds: IndexedSeq[PointId] = modelPoints.map(p => model.referenceMesh.pointSet.findClosestPoint(p).id).toIndexedSeq
   private val targetPoints: IndexedSeq[Point[_3D]] = UniformMeshSampler3D(target, numOfSamplePoints).sample().map(_._1).toIndexedSeq
+
+  private val modelIds: IndexedSeq[PointId] = modelPoints.map(p => model.referenceMesh.pointSet.findClosestPoint(p).id).toIndexedSeq
 
   override def propose(theta: ModelFittingParameters): ModelFittingParameters = {
     val posterior = cashedPosterior(theta)
@@ -88,14 +91,22 @@ case class NonRigidIcpProposal(
           val currentMeshPoint = currentMesh.pointSet.point(id)
           val targetPoint = target.operations.closestPointOnSurface(currentMeshPoint).point
           val targetPointId = target.pointSet.findClosestPoint(targetPoint).id
-          val isOnBoundary = target.operations.pointIsOnBoundary(targetPointId)
+
+          val modelNormal = currentMesh.vertexNormals(id)
+          val targetNormal = target.vertexNormals(targetPointId)
+          val isOnBoundary = (modelNormal dot targetNormal) <= 0 ||target.operations.pointIsOnBoundary(targetPointId)
           val noiseDistribution = SurfaceNoiseHelpers.surfaceNormalDependantNoise(currentMesh.vertexNormals.atPoint(id), noiseAlongNormal, tangentialNoise)
-          (id, targetPoint, noiseDistribution, isOnBoundary)
+          val distance = (targetPoint - currentMesh.pointSet.point(id)).norm2
+          (id, targetPoint, noiseDistribution, isOnBoundary, distance)
       }
 
       val correspondenceFiltered = if (boundaryAware) noisyCorrespondence.filter(!_._4) else noisyCorrespondence
 
-      for ((pointId, targetPoint, uncertainty, _) <- correspondenceFiltered) yield {
+      val correspondenceSingles = correspondenceFiltered.map(id => correspondenceFiltered.filter(_._1 == id._1).minBy(_._5))
+
+//      println(s"ICP corr (model sample): ${correspondenceSingles.length}")
+
+      for ((pointId, targetPoint, uncertainty, _, _) <- correspondenceSingles) yield {
         val referencePoint = model.referenceMesh.pointSet.point(pointId)
         (referencePoint, inversePoseTransform(targetPoint) - referencePoint, uncertainty)
       }
@@ -108,18 +119,38 @@ case class NonRigidIcpProposal(
 
       val noisyCorrespondence = targetPoints.map { targetPoint =>
         val id = currentMesh.pointSet.findClosestPoint(targetPoint).id
-        val isOnBoundary = currentMesh.operations.pointIsOnBoundary(id)
+        val targetPointID = target.pointSet.findClosestPoint(targetPoint).id
+        val modelNormal = currentMesh.vertexNormals(id)
+        val targetNormal = target.vertexNormals(targetPointID)
+        val isOnBoundary = (modelNormal dot targetNormal) <= 0 || currentMesh.operations.pointIsOnBoundary(id)
         val noiseDistribution = SurfaceNoiseHelpers.surfaceNormalDependantNoise(currentMesh.vertexNormals.atPoint(id), noiseAlongNormal, tangentialNoise)
-        (id, targetPoint, noiseDistribution, isOnBoundary)
+        val distance = (targetPoint - currentMesh.pointSet.point(id)).norm2
+        (id, targetPoint, noiseDistribution, isOnBoundary, distance)
       }
 
       val correspondenceFiltered = if (boundaryAware) noisyCorrespondence.filter(!_._4) else noisyCorrespondence
 
-      for ((pointId, targetPoint, uncertainty, _) <- correspondenceFiltered) yield {
+      val correspondenceSingles = correspondenceFiltered.map(id => correspondenceFiltered.filter(_._1 == id._1).minBy(_._5))
+//      println(s"ICP corr (target sample): ${correspondenceSingles.length}")
+      for ((pointId, targetPoint, uncertainty, _, _) <- correspondenceSingles) yield {
         val referencePoint = model.referenceMesh.pointSet.point(pointId)
         // (reference point, deformation vector in model space starting from reference, usually zero-mean observation uncertainty)
         (referencePoint, inversePoseTransform(targetPoint) - referencePoint, uncertainty)
       }
+    }
+
+    def landmarkBasedEstimation(
+                                            inversePoseTransform: RigidTransformation[_3D]
+                                          ): IndexedSeq[(Point[_3D], EuclideanVector[_3D], MultivariateNormalDistribution)] = {
+
+      val commonLmNames = modelLM.map(_.id) intersect targetLM.map(_.id)
+
+      commonLmNames.map{id =>
+        val mLM = modelLM.find(_.id == id).get
+        val tLM = targetLM.find(_.id == id).get
+        val modelPoint = model.referenceMesh.pointSet.findClosestPoint(mLM.point).point
+        (modelPoint, inversePoseTransform(tLM.point) - modelPoint, mLM.uncertainty.get)
+      }.toIndexedSeq
     }
 
     /**
@@ -135,7 +166,11 @@ case class NonRigidIcpProposal(
 
       if (projectionDirection == TargetSampling) {
         targetBasedClosestPointsEstimation(currentMesh, inversePoseTransform)
-      } else {
+      }
+      else if(projectionDirection == LandmarkCorrespondence) {
+        landmarkBasedEstimation(inversePoseTransform)
+      }
+      else {
         modelBasedClosestPointsEstimation(currentMesh, inversePoseTransform)
       }
     }

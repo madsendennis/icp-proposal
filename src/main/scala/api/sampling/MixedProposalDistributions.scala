@@ -16,8 +16,9 @@
 
 package api.sampling
 
-import api.other.{IcpProjectionDirection, ModelAndTargetSampling, ModelSampling, TargetSampling}
+import api.other.{IcpProjectionDirection, LandmarkCorrespondence, ModelAndTargetSampling, ModelSampling, TargetSampling}
 import api.sampling.proposals._
+import scalismo.geometry.{Landmark, _3D}
 import scalismo.mesh.TriangleMesh3D
 import scalismo.sampling.proposals.MixtureProposal
 import scalismo.sampling.proposals.MixtureProposal.ProposalGeneratorWithTransition
@@ -36,19 +37,24 @@ object MixedProposalDistributions {
     mixproposal
   }
 
-  def mixedProposalICP(model: StatisticalMeshModel, target: TriangleMesh3D, numOfSamplePoints: Int, projectionDirection: IcpProjectionDirection = ModelAndTargetSampling, tangentialNoise: Double = 100.0, noiseAlongNormal: Double = 3.0, stepLength: Double = 0.1, boundaryAware: Boolean = true): ProposalGeneratorWithTransition[ModelFittingParameters] = {
+  def mixedProposalICP(model: StatisticalMeshModel, target: TriangleMesh3D, modelLM: Seq[Landmark[_3D]], targetLM: Seq[Landmark[_3D]],numOfSamplePoints: Int, projectionDirection: IcpProjectionDirection = ModelAndTargetSampling, tangentialNoise: Double = 100.0, noiseAlongNormal: Double = 3.0, stepLength: Double = 0.1, boundaryAware: Boolean = true): ProposalGeneratorWithTransition[ModelFittingParameters] = {
 
     val rate = 0.5
 
-    val modelSamplingProposals: Seq[(Double, NonRigidIcpProposal)] = Seq((rate, NonRigidIcpProposal(model, target, stepLength, tangentialNoise = tangentialNoise, noiseAlongNormal = noiseAlongNormal, numOfSamplePoints, projectionDirection = ModelSampling, boundaryAware, generatedBy = s"IcpProposal-ModelSampling-${stepLength}Step")))
+    val modelSamplingProposals: Seq[(Double, NonRigidIcpProposal)] = Seq((rate, NonRigidIcpProposal(model, target, modelLM, targetLM, stepLength, tangentialNoise = tangentialNoise, noiseAlongNormal = noiseAlongNormal, numOfSamplePoints, projectionDirection = ModelSampling, boundaryAware, generatedBy = s"IcpProposal-ModelSampling-${stepLength}Step")))
 
-    val targetSamplingProposals: Seq[(Double, NonRigidIcpProposal)] = Seq((rate, NonRigidIcpProposal(model, target, stepLength, tangentialNoise = tangentialNoise, noiseAlongNormal = noiseAlongNormal, numOfSamplePoints, projectionDirection = TargetSampling, boundaryAware, generatedBy = s"IcpProposal-TargetSampling-${stepLength}Step")))
+    val targetSamplingProposals: Seq[(Double, NonRigidIcpProposal)] = Seq((rate, NonRigidIcpProposal(model, target, modelLM, targetLM, stepLength, tangentialNoise = tangentialNoise, noiseAlongNormal = noiseAlongNormal, numOfSamplePoints, projectionDirection = TargetSampling, boundaryAware, generatedBy = s"IcpProposal-TargetSampling-${stepLength}Step")))
+
+    val landmarkProposals: Seq[(Double, NonRigidIcpProposal)] = Seq((rate, NonRigidIcpProposal(model, target, modelLM, targetLM, stepLength, tangentialNoise = tangentialNoise, noiseAlongNormal = noiseAlongNormal, numOfSamplePoints, projectionDirection = LandmarkCorrespondence, boundaryAware, generatedBy = s"IcpProposal-Landmarks-${stepLength}Step")))
 
     def proposals: Seq[(Double, NonRigidIcpProposal)] = {
       if (projectionDirection == TargetSampling) {
         targetSamplingProposals
       } else if (projectionDirection == ModelSampling) {
         modelSamplingProposals
+      }
+      else if(projectionDirection == LandmarkCorrespondence) {
+        landmarkProposals
       }
       else {
         targetSamplingProposals ++ modelSamplingProposals

@@ -14,15 +14,10 @@
  *  limitations under the License.
  */
 
-package api.other
+package apps.molar
 
-trait IcpProjectionDirection
+import java.io.File
 
-case object ModelSampling extends IcpProjectionDirection
-
-case object TargetSampling extends IcpProjectionDirection
-
-case object LandmarkCorrespondence extends IcpProjectionDirection
-
-case object ModelAndTargetSampling extends IcpProjectionDirection
-
+object Paths {
+  val generalPath = new File("/Volumes/storage/Dropbox/Workspace/uni-data/tmp/molar")
+}

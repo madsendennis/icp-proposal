@@ -1,6 +1,6 @@
 organization  := "ch.unibas.cs.gravis"
 
-name := """ICP-PROPOSAL-REGISTRATION"""
+name := """MOLAR-ICP"""
 
 version       := "0.1"
 

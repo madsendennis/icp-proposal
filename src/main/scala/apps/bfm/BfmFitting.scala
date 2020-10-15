@@ -71,6 +71,7 @@ object BfmFitting {
       val proposalIcpInit = MixedProposalDistributions.mixedProposalICP(
         model,
         targetMeshPartial,
+        Seq(),Seq(),
         numOfICPointSamples,
         projectionDirection = ModelAndTargetSampling,
         tangentialNoise = 10.0,
@@ -81,6 +82,7 @@ object BfmFitting {
       val proposalIcpNext = MixedProposalDistributions.mixedProposalICP(
         model,
         targetMeshPartial,
+        Seq(),Seq(),
         numOfICPointSamples,
         projectionDirection = ModelAndTargetSampling,
         tangentialNoise = 4.0,
