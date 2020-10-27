@@ -19,14 +19,14 @@ package apps.molar
 import java.awt.Color
 import java.io.File
 
-import api.other.{LandmarkCorrespondence, ModelAndTargetSampling, ModelSampling, RegistrationComparison}
+import api.other.{LandmarkCorrespondence, ModelAndTargetSampling, RegistrationComparison}
 import api.sampling._
-import api.sampling.evaluators.{ModelToTargetEvaluation, SymmetricEvaluation}
-import apps.molar.Paths.generalPath
+import api.sampling.evaluators.ModelToTargetEvaluation
+import apps.molar.Paths.{generalPath, rawPath}
 import apps.util.AlignmentTransforms
 import scalismo.geometry.{Point3D, _3D}
 import scalismo.io.{LandmarkIO, MeshIO, StatisticalModelIO}
-import scalismo.mesh.{TriangleMesh, TriangleMesh3D}
+import scalismo.mesh.TriangleMesh3D
 import scalismo.sampling.DistributionEvaluator
 import scalismo.sampling.proposals.MixtureProposal.ProposalGeneratorWithTransition
 import scalismo.statisticalmodel.StatisticalMeshModel
@@ -53,13 +53,14 @@ object IcpProposalRegistration {
 
     println(s"Starting Metropolis Hastings registrations with ICP-proposal!")
 
-    val logPath = new File(generalPath, "log")
+    val logPath = new File("data/molar/log")
+    logPath.mkdirs()
 
-    val modelInit = StatisticalModelIO.readStatisticalMeshModel(new File(generalPath, "gp_model_200-components.h5")).get
-    val modelLmsInit = LandmarkIO.readLandmarksJson[_3D](new File(generalPath, "reference/landmarks/ref.json")).get
+    val modelInit = StatisticalModelIO.readStatisticalMeshModel(new File(rawPath, "reference/gp_model_197-components.h5")).get
+    val modelLmsInit = LandmarkIO.readLandmarksJson[_3D](new File(rawPath, "reference/landmarks/ref.json")).get
 
-    val targetMeshes = new File(Paths.generalPath, "targets/mesh/").listFiles(_.getName.endsWith("_1.stl"))
-    val lmPath = new File(Paths.generalPath, "targets/landmarks/")
+    val targetMeshes = new File(rawPath, "specified/crop/premolar2/mesh/").listFiles(!_.getName.contains("microCT")).sorted
+    val lmPath = new File(rawPath, "specified/crop/premolar2/landmarks/")
 
 //    val meshFile = targetMeshes.head
 
@@ -80,7 +81,7 @@ object IcpProposalRegistration {
 
       val numOfEvaluatorPoints = model.referenceMesh.pointSet.numberOfPoints / 2 // Used for the likelihood evaluator
       val numOfICPPointSamples = numOfEvaluatorPoints //model.rank*2 // Used for the ICP proposal
-      val numOfSamples = 200 // Length of Markov Chain
+      val numOfSamples = 1000 // Length of Markov Chain
 
       /** *** ***** ***** ***** ***** *****
         * Closest Point proposal configuration
@@ -89,8 +90,8 @@ object IcpProposalRegistration {
         *  - ModelSampling (if registering noisy meshes)
         *  - ModelAndTargetSampling (if registering clean complete meshes)
         *    **** ***** ***** ***** ***** **** */
-      val proposalLM = MixedProposalDistributions.mixedProposalICP(model, targetMesh, modelLms, targetLms, 0, projectionDirection = LandmarkCorrespondence, tangentialNoise = 10.0, noiseAlongNormal = 2.0, stepLength = 0.1)
-      val proposal = MixedProposalDistributions.mixedProposalICP(model, targetMesh, modelLms, targetLms, numOfICPPointSamples, projectionDirection = ModelAndTargetSampling, tangentialNoise = 3.0, noiseAlongNormal = 1.0, stepLength = 0.1)
+      val proposalLM = MixedProposalDistributions.mixedProposalICP(model, targetMesh, modelLms, targetLms, 0, projectionDirection = LandmarkCorrespondence, tangentialNoise = 1.0, noiseAlongNormal = 1.0, stepLength = 0.5)
+      val proposal = MixedProposalDistributions.mixedProposalICP(model, targetMesh, modelLms, targetLms, numOfICPPointSamples, projectionDirection = ModelAndTargetSampling, tangentialNoise = 1.0, noiseAlongNormal = 1.0, stepLength = 0.5)
       /* Uncomment below to use the standard "Random walk proposal" proposal */
       //    val proposal = MixedProposalDistributions.mixedProposalRandom(model)
 
@@ -103,7 +104,7 @@ object IcpProposalRegistration {
         *  - TargetToModelEvaluation (if registering partial meshes)
         *  - SymmetricEvaluation (if registering clean complete meshes)
         *    **** ***** ***** ***** ***** **** */
-      val evaluator = ProductEvaluators.proximityAndIndependent(model, targetMesh, evaluationMode = ModelToTargetEvaluation, uncertainty = 2.0, numberOfEvaluationPoints = numOfEvaluatorPoints)
+      val evaluator = ProductEvaluators.proximityAndIndependent(model, targetMesh, evaluationMode = ModelToTargetEvaluation, uncertainty = 1.0, numberOfEvaluationPoints = numOfEvaluatorPoints)
       /* Uncomment below to use the hausdorff likelihood function */
       //    val evaluator = ProductEvaluators.proximityAndHausdorff(model, targetMesh, uncertainty = 100.0)
 
@@ -123,7 +124,7 @@ object IcpProposalRegistration {
       val bestRegistration = ModelFittingParameters.transformedMesh(model, bestReg)
       ui.show(finalGroup, bestRegistration, "best-fit")
 
-      MeshIO.writeMesh(bestRegistration, new File(Paths.generalPath, s"targets/registered/${targetName}.vtk"))
+//      MeshIO.writeMesh(bestRegistration, new File(Paths.generalPath, s"targets/registered/${targetName}.vtk"))
 
       RegistrationComparison.evaluateReconstruction2GroundTruth("SAMPLE", bestRegistration, targetMesh)
     }

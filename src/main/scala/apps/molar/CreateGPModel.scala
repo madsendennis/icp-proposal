@@ -18,15 +18,11 @@ package apps.molar
 
 import java.io.File
 
-import apps.molar.Paths.generalPath
-import breeze.linalg.DenseMatrix
-import breeze.linalg.svd.SVD
-import scalismo.common.{Domain, NearestNeighborInterpolator, RealSpace, VectorField}
+import apps.molar.Paths.rawPath
+import scalismo.common.{NearestNeighborInterpolator, RealSpace, VectorField}
 import scalismo.geometry._
 import scalismo.io.{MeshIO, StatismoIO}
 import scalismo.kernels._
-import scalismo.mesh.TriangleMesh3D
-import scalismo.numerics.UniformMeshSampler3D
 import scalismo.statisticalmodel.{GaussianProcess, LowRankGaussianProcess, StatisticalMeshModel}
 import scalismo.ui.api.ScalismoUI
 import scalismo.utils.Random
@@ -38,43 +34,34 @@ object CreateGPModel {
   def main(args: Array[String]): Unit = {
     scalismo.initialize()
 
+    val referenceMesh = MeshIO.readMesh(new File(rawPath, "reference/mesh/lowermolar_LowerJaw_full_mirrored_coarse.ply")).get
+
+    println("Num of points in ref: " + referenceMesh.pointSet.numberOfPoints)
+
+    val zeroMean = VectorField(RealSpace[_3D], (_: Point[_3D]) => EuclideanVector.zeros[_3D])
+
+    val k = DiagonalKernel(GaussianKernel[_3D](9) * 0.6, 3) +
+        DiagonalKernel(GaussianKernel[_3D](6) * 0.3, 3) +
+        DiagonalKernel(GaussianKernel[_3D](3) * 0.1, 3)
+//        DiagonalKernel(GaussianKernel[_3D](1) * 0.05, 3)
+//        DiagonalKernel(GaussianKernel[_3D](0.5) * 0.05, 3)
+
+    val gp = GaussianProcess[_3D, EuclideanVector[_3D]](zeroMean, k)
+
+    val lowRankGP: LowRankGaussianProcess[_3D, EuclideanVector[_3D]] = LowRankGaussianProcess.approximateGPCholesky(referenceMesh.pointSet, gp, relativeTolerance = 0.01, interpolator = NearestNeighborInterpolator())
+
+    val rank = lowRankGP.rank
+
+    val outputModelFile = new File(rawPath, s"reference/gp_model_$rank-components.h5")
+
     val ui = ScalismoUI()
 
-    val referenceMesh = MeshIO.readMesh(new File(generalPath, "reference/mesh/lowermolar_LowerJaw_full_mirrored_coarse.ply")).get
+    println(lowRankGP.klBasis.map(_.eigenvalue))
+    val mm = StatisticalMeshModel(referenceMesh, lowRankGP)
+    val modelGroup = ui.createGroup(s"Model-$rank")
+    ui.show(modelGroup, mm, "model")
 
-      println("Num of points in ref: " + referenceMesh.pointSet.numberOfPoints)
-
-      val zeroMean = VectorField(RealSpace[_3D], (_: Point[_3D]) => EuclideanVector.zeros[_3D])
-
-      val cov: MatrixValuedPDKernel[_3D] = new MatrixValuedPDKernel[_3D]() {
-        // Adds more variance along the main direction of variation (the bone length)
-        private val largeKernel = DiagonalKernel[_3D](GaussianKernel(6), 3) * 1.0
-        private val midKernels = DiagonalKernel[_3D](GaussianKernel(3), 3) * 0.1
-//        private val smallKernels = DiagonalKernel[_3D](GaussianKernel(10), 3) * 0.0
-
-        override protected def k(x: Point[_3D], y: Point[_3D]): DenseMatrix[Double] = {
-          largeKernel(x, y) + midKernels(x, y) //+ smallKernels(x, y)
-        }
-
-        override def outputDim = 3
-
-        override def domain: Domain[_3D] = RealSpace[_3D]
-      }
-
-      val gp = GaussianProcess[_3D, EuclideanVector[_3D]](zeroMean, cov)
-
-      val lowRankGP: LowRankGaussianProcess[_3D, EuclideanVector[_3D]] = LowRankGaussianProcess.approximateGPCholesky(referenceMesh.pointSet, gp, relativeTolerance = 0.01, interpolator = NearestNeighborInterpolator())
-
-      val rank = lowRankGP.rank
-
-    val outputModelFile = new File(generalPath, s"gp_model_$rank-components.h5")
-
-      println(lowRankGP.klBasis.map(_.eigenvalue))
-      val mm = StatisticalMeshModel(referenceMesh, lowRankGP)
-      val modelGroup = ui.createGroup(s"Model-$rank")
-      ui.show(modelGroup, mm, "model")
-
-      println(s"Writing GP model to: ${outputModelFile}")
-      StatismoIO.writeStatismoMeshModel(mm, outputModelFile)
+    println(s"Writing GP model to: ${outputModelFile}")
+    StatismoIO.writeStatismoMeshModel(mm, outputModelFile)
   }
 }
