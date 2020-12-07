@@ -3,6 +3,7 @@ package apps.molarSteps
 import java.io.File
 
 import apps.molar.Paths.rawPath
+import apps.molarSteps.Paths.userHome
 import breeze.linalg.DenseVector
 import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.mesh.MeshMetrics
@@ -17,7 +18,7 @@ object Step6_GradientBasedRegistration_crowns {
     val modelFile = new File(rawPath, s"reference/gp_model_2024-components_smooth_aligned_crown.h5")
     val model = StatisticalModelIO.readStatisticalMeshModel(modelFile).get //.truncate(1000)
 
-    val targetMeshes = new File("/Volumes/storage/Dropbox/Workspace/uni-data/albert/surface/trainingsets_teeth/uk6er_extended/").listFiles(_.getName.endsWith(".stl")).sorted
+    val targetMeshes = new File(userHome, "Dropbox/Workspace/uni-data/albert/surface/trainingsets_teeth/uk6er_extended/").listFiles(_.getName.endsWith(".stl")).sorted
 
     println(s"Model: ${modelFile}, vertices: ${model.referenceMesh.pointSet.numberOfPoints}, rank: ${model.rank}")
 

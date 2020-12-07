@@ -19,7 +19,9 @@ package apps.molarSteps
 import java.io.File
 
 object Paths {
-  val generalPath = new File("/Volumes/storage/Dropbox/Workspace/uni-data/tmp/molar")
+  val userHome = System.getProperty("user.home")
+
+  val generalPath = new File(userHome, "Dropbox/Workspace/uni-data/tmp/molar")
   val rawPath = new File(generalPath, "raw")
   val alignedPath = new File(generalPath, "aligned")
 }
