@@ -1,6 +1,7 @@
 package apps.molarSteps
 
 import java.io.File
+import java.util.concurrent.ForkJoinPool
 
 import apps.molar.Paths.rawPath
 import apps.molarSteps.Paths.userHome
@@ -9,6 +10,8 @@ import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.mesh.MeshMetrics
 import scalismo.ui.api.{ScalismoUI, ScalismoUIHeadless}
 import scalismo.ui.util.FileUtil
+
+import scala.collection.parallel._
 
 object Step6_GradientBasedRegistration_crowns {
 
@@ -22,8 +25,10 @@ object Step6_GradientBasedRegistration_crowns {
 
     println(s"Model: ${modelFile}, vertices: ${model.referenceMesh.pointSet.numberOfPoints}, rank: ${model.rank}")
 
+    val targetMeshesPar = targetMeshes.par
+    targetMeshesPar.tasksupport = new ForkJoinTaskSupport(new ForkJoinPool(20))
     //    val meshFile = targetMeshes(5)
-    targetMeshes.par.foreach { meshFile =>
+    targetMeshesPar.foreach { meshFile =>
 
       val targetName = FileUtil.basename(meshFile)
 
