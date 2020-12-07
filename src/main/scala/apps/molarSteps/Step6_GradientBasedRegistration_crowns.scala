@@ -8,7 +8,7 @@ import apps.molarSteps.Paths.userHome
 import breeze.linalg.DenseVector
 import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.mesh.MeshMetrics
-import scalismo.ui.api.{ScalismoUI, ScalismoUIHeadless}
+import scalismo.ui.api.ScalismoUIHeadless
 import scalismo.ui.util.FileUtil
 
 import scala.collection.parallel._
@@ -19,14 +19,14 @@ object Step6_GradientBasedRegistration_crowns {
     scalismo.initialize()
 
     val modelFile = new File(rawPath, s"reference/gp_model_2024-components_smooth_aligned_crown.h5")
-    val model = StatisticalModelIO.readStatisticalMeshModel(modelFile).get //.truncate(1000)
+    val model = StatisticalModelIO.readStatisticalMeshModel(modelFile).get.truncate(1000)
 
     val targetMeshes = new File(userHome, "Dropbox/Workspace/uni-data/albert/surface/trainingsets_teeth/uk6er_extended/").listFiles(_.getName.endsWith(".stl")).sorted
 
     println(s"Model: ${modelFile}, vertices: ${model.referenceMesh.pointSet.numberOfPoints}, rank: ${model.rank}")
 
     val targetMeshesPar = targetMeshes.par
-    targetMeshesPar.tasksupport = new ForkJoinTaskSupport(new ForkJoinPool(20))
+    targetMeshesPar.tasksupport = new ForkJoinTaskSupport(new ForkJoinPool(1))
     //    val meshFile = targetMeshes(5)
     targetMeshesPar.foreach { meshFile =>
 
@@ -36,7 +36,7 @@ object Step6_GradientBasedRegistration_crowns {
 
       val targetMesh = MeshIO.readMesh(meshFile).get
 
-//      val ui = ScalismoUI(s"target: ${targetName}")
+      //      val ui = ScalismoUI(s"target: ${targetName}")
       val ui = ScalismoUIHeadless()
       val modelGroup = ui.createGroup("model")
       val targetGroup = ui.createGroup("target")
@@ -44,12 +44,11 @@ object Step6_GradientBasedRegistration_crowns {
       val showTarget = ui.show(targetGroup, targetMesh, "target")
       ui.show(targetGroup, model.mean, "init")
 
-
-      val regWeights = Seq(1e-1, 1e-2, 1e-4, 1e-5, 1e-7, 1e-8)
+      val regWeights = Seq(1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8)
       val initialCoefficients = DenseVector.zeros[Double](model.rank)
       val finalCoefficients = regWeights.foldLeft(initialCoefficients) { (modelCoefficients, regParameters) =>
         println(s"Registration, current regularization weights: ${regParameters}")
-        GradientBasedRegistration.fitting(model, targetMesh, None, robustMetric = true, numOfIterations = 100, showModel = Option(showModel), regWeight = regParameters, modelCoefficients = modelCoefficients)
+        GradientBasedRegistration.fitting(model, targetMesh, None, robustMetric = true, numOfIterations = 50, showModel = Option(showModel), regWeight = regParameters, modelCoefficients = modelCoefficients)
       }
 
       val registered = model.instance(finalCoefficients)
