@@ -34,20 +34,20 @@ object ComputePCAmodel {
   def main(args: Array[String]) {
     scalismo.initialize()
 
-    val alignedMeshesPath = new File(alignedPath, "mesh").listFiles(_.getName.endsWith(".ply"))
+    val alignedMeshesPath = new File(alignedPath, "detailed/mesh").listFiles(_.getName.endsWith(".ply"))
     val meshes = alignedMeshesPath.map(f => MeshIO.readMesh(f).get)
-    val referenceMesh = MeshIO.readMesh(new File(rawPath, "reference/mesh/lowermolar_LowerJaw_full_mirrored_coarse.ply")).get
+    val referenceMesh = MeshIO.readMesh(new File(rawPath, "reference/mesh/lowermolar_LowerJaw_full_mirrored.ply")).get
 
-    val dc = DataCollection.fromMeshSequence(referenceMesh, meshes)._1.get
-
-    val pca = StatisticalMeshModel.createUsingPCA(dc).get
+    val dc = DataCollection.fromTriangleMesh3DSequence(referenceMesh, meshes)
+    val alignedDC = DataCollection.gpa(dc)
+    val pca = StatisticalMeshModel.createUsingPCA(alignedDC).get
 
     val ui = ScalismoUI()
     ui.show(pca, "model")
 
-    val experimentPath = new File(alignedPath, "pca")
+    val experimentPath = new File(alignedPath, "detailed/pca")
     experimentPath.mkdir()
 
-    StatisticalModelIO.writeStatisticalMeshModel(pca, new File(experimentPath, "pca_basic2.h5"))
+    StatisticalModelIO.writeStatisticalMeshModel(pca, new File(experimentPath, "pca_basic.h5"))
   }
 }

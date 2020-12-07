@@ -14,43 +14,39 @@
  *  limitations under the License.
  */
 
-package apps.molar
+package apps.molarSteps
 
 import java.io.File
 
 import apps.molar.Paths.rawPath
-import scalismo.common.interpolation.{NearestNeighborInterpolator, TriangleMeshInterpolator3D}
-import scalismo.common.{EuclideanSpace, Field, RealSpace}
+import scalismo.common.interpolation.TriangleMeshInterpolator3D
+import scalismo.common.{EuclideanSpace, Field}
 import scalismo.geometry._
-import scalismo.io.{MeshIO, StatismoIO, StatisticalModelIO}
+import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.kernels._
 import scalismo.statisticalmodel.{GaussianProcess, LowRankGaussianProcess, StatisticalMeshModel}
 import scalismo.ui.api.ScalismoUI
 import scalismo.utils.Random
 
 
-object CreateGPModel {
+object Step5_CreateCrownGPModel {
   implicit val random: Random = Random(1024)
 
   def main(args: Array[String]): Unit = {
     scalismo.initialize()
 
-    val referenceMesh = MeshIO.readMesh(new File(rawPath, "reference/mesh/lowermolar_LowerJaw_full_mirrored_smooth_crown.ply")).get
+    val referenceMesh = MeshIO.readMesh(new File(rawPath, "reference/mesh/lowermolar_LowerJaw_full_mirrored_smooth_aligned_crown.ply")).get
 
     println("Num of points in ref: " + referenceMesh.pointSet.numberOfPoints)
 
     val zeroMean = Field(EuclideanSpace[_3D], (_: Point[_3D]) => EuclideanVector.zeros[_3D])
 
-//    // Full tooth
-//    val k = DiagonalKernel(GaussianKernel[_3D](9) * 0.6, 3) +
-//      DiagonalKernel(GaussianKernel[_3D](6) * 0.3, 3) +
-//      DiagonalKernel(GaussianKernel[_3D](3) * 0.1, 3)
+//    // Tooth crown
 
-    // Crown only
     val k = DiagonalKernel(GaussianKernel[_3D](6) * 0.3, 3) +
-        DiagonalKernel(GaussianKernel[_3D](3) * 0.3, 3) +
-        DiagonalKernel(GaussianKernel[_3D](1) * 0.1, 3) +
-        DiagonalKernel(GaussianKernel[_3D](0.5) * 0.05, 3)
+      DiagonalKernel(GaussianKernel[_3D](3) * 0.3, 3) +
+      DiagonalKernel(GaussianKernel[_3D](1) * 0.1, 3) +
+      DiagonalKernel(GaussianKernel[_3D](0.5) * 0.05, 3)
 
     val gp = GaussianProcess[_3D, EuclideanVector[_3D]](zeroMean, k)
 
@@ -58,7 +54,7 @@ object CreateGPModel {
 
     val rank = lowRankGP.rank
 
-    val outputModelFile = new File(rawPath, s"reference/gp_model_$rank-components_smooth_crown.h5")
+    val outputModelFile = new File(rawPath, s"reference/gp_model_$rank-components_smooth_aligned_crown.h5")
 
     val ui = ScalismoUI()
 

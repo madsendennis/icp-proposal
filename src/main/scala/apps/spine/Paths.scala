@@ -14,19 +14,10 @@
  *  limitations under the License.
  */
 
-package apps.util
+package apps.spine
 
-import scalismo.geometry.{Landmark, Point, _3D}
-import scalismo.mesh.TriangleMesh
-import scalismo.registration.LandmarkRegistration
-import scalismo.transformations.RigidTransformation
+import java.io.File
 
-object AlignmentTransforms {
-
-  def computeTransform(lm1: Seq[Landmark[_3D]], lm2: Seq[Landmark[_3D]], center: Point[_3D]): RigidTransformation[_3D] = {
-    val commonLmNames = lm1.map(_.id) intersect lm2.map(_.id)
-
-    val landmarksPairs = commonLmNames.map(name => (lm1.find(_.id == name).get.point, lm2.find(_.id == name).get.point))
-    LandmarkRegistration.rigid3DLandmarkRegistration(landmarksPairs, center)
-  }
+object Paths {
+  val generalPath = new File("data/spine")
 }

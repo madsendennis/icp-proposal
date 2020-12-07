@@ -1,4 +1,4 @@
-package apps.molar
+package apps.molarSteps
 
 import java.io.File
 
@@ -69,11 +69,11 @@ object GradientBasedRegistration {
   def main(args: Array[String]): Unit = {
     scalismo.initialize()
 
-    val modelFile = new File(rawPath, "reference/gp_model_199-components.h5")
+    val modelFile = new File(rawPath, "reference/gp_model_186-components_smooth_aligned.h5")
     val modelInit = StatisticalModelIO.readStatisticalMeshModel(modelFile).get
-    val modelLmsInit = LandmarkIO.readLandmarksJson[_3D](new File(rawPath, "reference/landmarks/ref.json")).get
+    val modelLmsInit = LandmarkIO.readLandmarksJson[_3D](new File(rawPath, "reference/landmarks/ref_smooth_aligned.json")).get
 
-    val targetMeshes = new File(rawPath, "specified/crop/premolar2/mesh/").listFiles(!_.getName.contains("microCT")).sorted.filter(_.getName.contains("9.1.81")).sorted
+    val targetMeshes = new File(rawPath, "specified/crop/premolar2/mesh/").listFiles(!_.getName.contains("microCT")).sorted//.filter(_.getName.contains("9.1.81"))
     val lmPath = new File(rawPath, "specified/crop/premolar2/landmarks/")
 
     //    val meshFile = targetMeshes(0)
@@ -126,7 +126,7 @@ object GradientBasedRegistration {
       val haus = MeshMetrics.hausdorffDistance(registered, targetMesh)
       print(s"registration eval, avg: ${avg}, haus: ${haus}")
 
-      MeshIO.writeMesh(registered, new File(rawPath, s"computed/crop/premolar2/meshGradientBasedDetailed/${targetName}.ply"))
+      MeshIO.writeMesh(registered, new File(rawPath, s"computed/crop/premolar2/meshGradientBasedSmooth/${targetName}.ply"))
     }
   }
 }

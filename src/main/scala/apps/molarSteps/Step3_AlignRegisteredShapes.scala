@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package apps.molar
+package apps.molarSteps
 
 import java.io.File
 
@@ -25,7 +25,7 @@ import scalismo.io.{LandmarkIO, MeshIO}
 import scalismo.registration.LandmarkRegistration
 import scalismo.utils.Random
 
-object AlignRegisteredShapes {
+object Step3_AlignRegisteredShapes {
   implicit val random: Random = Random(1024)
 
   def main(args: Array[String]) {
@@ -33,7 +33,7 @@ object AlignRegisteredShapes {
 
     val computedPath = new File(rawPath, "computed/crop/premolar2/")
     val computedLMsPath = new File(computedPath, "landmarks")
-    val computedMeshesPath = new File(computedPath, "meshGradientBasedDetailed").listFiles(_.getName.endsWith(".ply"))
+    val computedMeshesPath = new File(computedPath, "meshGradientBasedSmooth").listFiles(_.getName.endsWith(".ply"))
 
     alignedPath.mkdir()
     val alignedLMsPath = new File(alignedPath, "landmarks")
@@ -41,7 +41,7 @@ object AlignRegisteredShapes {
     val alignedMeshesPath = new File(alignedPath, "mesh")
     alignedMeshesPath.mkdir()
 
-    val referenceMesh = MeshIO.readMesh(new File(rawPath, "reference/mesh/lowermolar_LowerJaw_full_mirrored_coarse.ply")).get
+    val referenceMesh = MeshIO.readMesh(new File(rawPath, "reference/mesh/lowermolar_LowerJaw_full_mirrored_smooth_aligned.ply")).get
     val origin = Point3D(0, 0, 0)
 
     computedMeshesPath.foreach { f =>

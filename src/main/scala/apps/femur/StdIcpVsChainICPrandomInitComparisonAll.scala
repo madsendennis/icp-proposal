@@ -28,7 +28,7 @@ import apps.femur.RandomSamplesFromModel.InitialiseShapeParameters
 import apps.util.FileUtils
 import breeze.linalg.{DenseMatrix, DenseVector}
 import scalismo.geometry._
-import scalismo.io.{MeshIO, StatismoIO}
+import scalismo.io.{MeshIO, StatismoIO, StatisticalModelIO}
 import scalismo.mesh.{MeshMetrics, TriangleMesh, TriangleMesh3D}
 import scalismo.statisticalmodel.{MultivariateNormalDistribution, StatisticalMeshModel}
 import scalismo.ui.api.ScalismoUIHeadless
@@ -85,7 +85,7 @@ object StdIcpVsChainICPrandomInitComparisonAll {
     logPath.mkdir()
 
     val modelFile = new File(dataFemurPath, "femur_gp_model_200-components.h5")
-    val model = StatismoIO.readStatismoMeshModel(modelFile).get
+    val model = StatisticalModelIO.readStatisticalMeshModel(modelFile).get
 
     val subPath = "aligned"
 

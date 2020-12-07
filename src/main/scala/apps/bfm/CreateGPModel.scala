@@ -19,10 +19,10 @@ package apps.bfm
 import java.io.File
 
 import apps.bfm.Paths.generalPath
-import scalismo.common.ScalarArray
+import scalismo.common.DiscreteField.ScalarMeshField
+import scalismo.common.{ScalarArray, ScalarMeshField}
 import scalismo.geometry._
-import scalismo.io.StatismoIO
-import scalismo.mesh.ScalarMeshField
+import scalismo.io.{StatismoIO, StatisticalModelIO}
 import scalismo.numerics.UniformMeshSampler3D
 import scalismo.statisticalmodel.{GaussianProcess, LowRankGaussianProcess, StatisticalMeshModel}
 import scalismo.ui.api.ScalismoUI
@@ -37,7 +37,7 @@ object CreateGPModel {
 
 
       val modelFile = new File(generalPath, "model2017-1_face12_nomouth.h5")
-      val model = StatismoIO.readStatismoMeshModel(modelFile, "shape").get
+      val model = StatisticalModelIO.readStatisticalMeshModel(modelFile, "shape").get
 
       val numOfBasisFunctions = 200
 //      val referenceMesh = model.referenceMesh
@@ -61,6 +61,6 @@ object CreateGPModel {
       val ui = ScalismoUI()
       ui.show(gpModel, "GP")
 
-      StatismoIO.writeStatismoMeshModel(gpModel, new File(generalPath, s"faceGPmodel_${numOfBasisFunctions}c.h5"))
+      StatisticalModelIO.writeStatisticalMeshModel(gpModel, new File(generalPath, s"faceGPmodel_${numOfBasisFunctions}c.h5"))
   }
 }

@@ -18,13 +18,14 @@ package api.sampling.proposals
 
 import api.other.{IcpProjectionDirection, LandmarkCorrespondence, ModelSampling, TargetSampling}
 import api.sampling.{ModelFittingParameters, ShapeParameters, SurfaceNoiseHelpers}
-import scalismo.common.{Field, NearestNeighborInterpolator, PointId}
+import scalismo.common.interpolation.NearestNeighborInterpolator
+import scalismo.common.{Field, PointId}
 import scalismo.geometry._
 import scalismo.mesh.{TriangleMesh, TriangleMesh3D}
 import scalismo.numerics.UniformMeshSampler3D
-import scalismo.registration.RigidTransformation
 import scalismo.sampling.{ProposalGenerator, TransitionProbability}
 import scalismo.statisticalmodel.{LowRankGaussianProcess, MultivariateNormalDistribution, StatisticalMeshModel}
+import scalismo.transformations.RigidTransformation
 import scalismo.utils.Memoize
 
 case class NonRigidIcpProposal(
@@ -72,11 +73,23 @@ case class NonRigidIcpProposal(
   }
 
 
+//  override def logTransitionProbability(from: ModelFittingParameters, to: ModelFittingParameters): Double = {
+//    val posterior = cashedPosterior(from)
+//    val compensatedTo = to.copy(shapeParameters = ShapeParameters(from.shapeParameters.parameters + (to.shapeParameters.parameters - from.shapeParameters.parameters) / stepLength))
+//    val pdf = posterior.logpdf(compensatedTo.shapeParameters.parameters)
+//    pdf
+//  }
+
   override def logTransitionProbability(from: ModelFittingParameters, to: ModelFittingParameters): Double = {
-    val posterior = cashedPosterior(from)
-    val compensatedTo = to.copy(shapeParameters = ShapeParameters(from.shapeParameters.parameters + (to.shapeParameters.parameters - from.shapeParameters.parameters) / stepLength))
-    val pdf = posterior.logpdf(compensatedTo.shapeParameters.parameters)
-    pdf
+    val pos = cashedPosterior(from)
+    val posterior = StatisticalMeshModel(referenceMesh, pos)
+
+    val compensatedTo = from.shapeParameters.parameters + ((to.shapeParameters.parameters -
+      from.shapeParameters.parameters) / stepLength)
+    val toMesh = model.instance(compensatedTo)
+
+    val projectedTo = posterior.coefficients(toMesh)
+    pos.logpdf(projectedTo)
   }
 
 

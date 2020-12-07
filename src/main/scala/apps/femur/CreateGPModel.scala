@@ -20,9 +20,9 @@ import java.io.File
 
 import breeze.linalg.DenseMatrix
 import breeze.linalg.svd.SVD
-import scalismo.common.{Domain, RealSpace, VectorField}
+import scalismo.common.{Domain, EuclideanSpace, EuclideanSpace3D, Field, RealSpace}
 import scalismo.geometry._
-import scalismo.io.{MeshIO, StatismoIO}
+import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.kernels._
 import scalismo.mesh.TriangleMesh3D
 import scalismo.numerics.UniformMeshSampler3D
@@ -65,15 +65,15 @@ object CreateGPModel {
 
       println("Num of points in ref: " + referenceMesh.pointSet.numberOfPoints)
 
-      val zeroMean = VectorField(RealSpace[_3D], (_: Point[_3D]) => EuclideanVector.zeros[_3D])
+      val zeroMean = Field(EuclideanSpace[_3D], (_: Point[_3D]) => EuclideanVector.zeros[_3D])
 
       val cov: MatrixValuedPDKernel[_3D] = new MatrixValuedPDKernel[_3D]() {
         private val directionMatrix = getAxisOfMainVariance(referenceMesh)
         // Adds more variance along the main direction of variation (the bone length)
         private val baseMatrix = directionMatrix * DenseMatrix((10.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)) * directionMatrix.t
-        private val baseKernel = GaussianKernel[_3D](90) * 10.0
-        private val midKernels = DiagonalKernel[_3D](GaussianKernel(40), 3) * 5.0
-        private val smallKernels = DiagonalKernel[_3D](GaussianKernel(10), 3) * 3.0
+        private val baseKernel = GaussianKernel3D(90) * 10.0
+        private val midKernels = DiagonalKernel3D(GaussianKernel3D(40), 3) * 5.0
+        private val smallKernels = DiagonalKernel3D(GaussianKernel3D(10), 3) * 3.0
 
         override protected def k(x: Point[_3D], y: Point[_3D]): DenseMatrix[Double] = {
           (baseMatrix * baseKernel(x, y)) + midKernels(x, y) + smallKernels(x, y)
@@ -81,7 +81,7 @@ object CreateGPModel {
 
         override def outputDim = 3
 
-        override def domain: Domain[_3D] = RealSpace[_3D]
+        override def domain: Domain[_3D] = EuclideanSpace3D
       }
 
       val gp = GaussianProcess[_3D, EuclideanVector[_3D]](zeroMean, cov)
@@ -102,7 +102,7 @@ object CreateGPModel {
       val modelGroup = ui.createGroup(s"Model-$i")
       ui.show(modelGroup, mm, "model")
 
-      StatismoIO.writeStatismoMeshModel(mm, outputModelFile)
+      StatisticalModelIO.writeStatisticalMeshModel(mm, outputModelFile)
     }
   }
 }

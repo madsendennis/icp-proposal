@@ -24,10 +24,12 @@ import api.sampling.evaluators.SymmetricEvaluation
 import apps.femur.Paths.{dataFemurPath, generalPath}
 import apps.util.FileUtils
 import scalismo.geometry._
-import scalismo.io.{MeshIO, StatismoIO}
+import scalismo.io.{MeshIO, StatismoIO, StatisticalModelIO}
+
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scalismo.utils.Random.implicits._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object RunMHRandomInitComparison {
@@ -39,7 +41,7 @@ object RunMHRandomInitComparison {
     val logPath = new File(dataFemurPath, "log")
 
     val modelFile = new File(dataFemurPath, "femur_gp_model_50-components.h5")
-    val model = StatismoIO.readStatismoMeshModel(modelFile).get
+    val model = StatisticalModelIO.readStatisticalMeshModel(modelFile).get
     println(s"Model file to be used: $modelFile")
 
     // Note that the test femurs are already aligned to the model reference after running "AlignShapes"

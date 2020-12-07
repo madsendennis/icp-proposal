@@ -14,43 +14,42 @@
  *  limitations under the License.
  */
 
-package apps.molar
+package apps.spine
 
 import java.io.File
 
-import apps.molar.Paths.{alignedPath, rawPath}
+import apps.spine.Paths.generalPath
 import apps.util.{AlignmentTransforms, FileUtils}
 import scalismo.geometry.{Point3D, _3D}
 import scalismo.io.{LandmarkIO, MeshIO}
-import scalismo.registration.LandmarkRegistration
 import scalismo.utils.Random
 
-object AlignRegisteredShapes {
+object AlignShapes {
   implicit val random: Random = Random(1024)
 
   def main(args: Array[String]) {
     scalismo.initialize()
 
-    val computedPath = new File(rawPath, "computed/crop/premolar2/")
-    val computedLMsPath = new File(computedPath, "landmarks")
-    val computedMeshesPath = new File(computedPath, "meshGradientBasedDetailed").listFiles(_.getName.endsWith(".ply"))
-
+    val initialPath = new File(generalPath, "raw")
+    val initialLMsPath = new File(initialPath, "landmarks")
+    val initialMeshesPath = new File(initialPath, "meshes")
+    val alignedPath = new File(generalPath, "aligned")
     alignedPath.mkdir()
     val alignedLMsPath = new File(alignedPath, "landmarks")
     alignedLMsPath.mkdir()
-    val alignedMeshesPath = new File(alignedPath, "mesh")
+    val alignedMeshesPath = new File(alignedPath, "meshes")
     alignedMeshesPath.mkdir()
 
-    val referenceMesh = MeshIO.readMesh(new File(rawPath, "reference/mesh/lowermolar_LowerJaw_full_mirrored_coarse.ply")).get
+//    val referenceMesh = MeshIO.readMesh(new File(generalPath, "reference/mesh/01_L1.stl")).get
+    val referenceLMs = LandmarkIO.readLandmarksJson[_3D](new File(generalPath, "reference/landmarks/01_L1.json")).get
     val origin = Point3D(0, 0, 0)
 
-    computedMeshesPath.foreach { f =>
+    initialMeshesPath.listFiles.foreach { f =>
       val basename = FileUtils.basename(f)
       val lmName = s"$basename.json"
       val mesh = MeshIO.readMesh(f).get
-      val lms = LandmarkIO.readLandmarksJson[_3D](new File(computedLMsPath, lmName)).get
-      val pointPairs = mesh.pointSet.points.toIndexedSeq zip referenceMesh.pointSet.points.toIndexedSeq
-      val transform = LandmarkRegistration.rigid3DLandmarkRegistration(pointPairs, origin)
+      val lms = LandmarkIO.readLandmarksJson[_3D](new File(initialLMsPath, lmName)).get
+      val transform = AlignmentTransforms.computeTransform(lms, referenceLMs, origin)
       MeshIO.writeMesh(mesh.transform(transform), new File(alignedMeshesPath, f.getName))
       LandmarkIO.writeLandmarksJson[_3D](lms.map(_.transform(transform)), new File(alignedLMsPath, lmName))
     }
