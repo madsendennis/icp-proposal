@@ -21,7 +21,8 @@ import java.io.File
 object Paths {
   val userHome = System.getProperty("user.home")
 
-  val generalPath = new File(userHome, "Dropbox/Workspace/uni-data/tmp/molar")
+  val generalPath = new File(userHome, "/export/skulls/projects/teeth/data")
+//  val generalPath = new File(userHome, "Dropbox/Workspace/uni-data/tmp/molar")
   val rawPath = new File(generalPath, "raw")
   val alignedPath = new File(generalPath, "aligned")
 }
