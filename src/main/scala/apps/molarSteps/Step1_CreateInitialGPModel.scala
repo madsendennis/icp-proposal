@@ -19,10 +19,10 @@ package apps.molarSteps
 import java.io.File
 
 import apps.molar.Paths.rawPath
-import scalismo.common.interpolation.{NearestNeighborInterpolator, TriangleMeshInterpolator3D}
-import scalismo.common.{EuclideanSpace, Field, RealSpace}
+import scalismo.common.interpolation.TriangleMeshInterpolator3D
+import scalismo.common.{EuclideanSpace, Field}
 import scalismo.geometry._
-import scalismo.io.{MeshIO, StatismoIO, StatisticalModelIO}
+import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.kernels._
 import scalismo.statisticalmodel.{GaussianProcess, LowRankGaussianProcess, StatisticalMeshModel}
 import scalismo.ui.api.ScalismoUI
@@ -41,7 +41,7 @@ object Step1_CreateInitialGPModel {
 
     val zeroMean = Field(EuclideanSpace[_3D], (_: Point[_3D]) => EuclideanVector.zeros[_3D])
 
-//    // Full tooth
+    //    // Full tooth
     val k = DiagonalKernel(GaussianKernel[_3D](9) * 0.6, 3) +
       DiagonalKernel(GaussianKernel[_3D](6) * 0.3, 3) +
       DiagonalKernel(GaussianKernel[_3D](3) * 0.1, 3)

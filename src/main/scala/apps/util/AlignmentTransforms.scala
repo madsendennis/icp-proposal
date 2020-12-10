@@ -23,10 +23,14 @@ import scalismo.transformations.RigidTransformation
 
 object AlignmentTransforms {
 
-  def computeTransform(lm1: Seq[Landmark[_3D]], lm2: Seq[Landmark[_3D]], center: Point[_3D]): RigidTransformation[_3D] = {
+  def commonLandmarkPairs(lm1: Seq[Landmark[_3D]], lm2: Seq[Landmark[_3D]]): Seq[(Point[_3D], Point[_3D])] = {
     val commonLmNames = lm1.map(_.id) intersect lm2.map(_.id)
 
-    val landmarksPairs = commonLmNames.map(name => (lm1.find(_.id == name).get.point, lm2.find(_.id == name).get.point))
+    commonLmNames.map(name => (lm1.find(_.id == name).get.point, lm2.find(_.id == name).get.point))
+  }
+
+  def computeTransform(lm1: Seq[Landmark[_3D]], lm2: Seq[Landmark[_3D]], center: Point[_3D]): RigidTransformation[_3D] = {
+    val landmarksPairs = commonLandmarkPairs(lm1, lm2)
     LandmarkRegistration.rigid3DLandmarkRegistration(landmarksPairs, center)
   }
 }

@@ -73,7 +73,7 @@ object GradientBasedRegistration {
     val modelInit = StatisticalModelIO.readStatisticalMeshModel(modelFile).get
     val modelLmsInit = LandmarkIO.readLandmarksJson[_3D](new File(rawPath, "reference/landmarks/ref_smooth_aligned.json")).get
 
-    val targetMeshes = new File(rawPath, "specified/crop/premolar2/mesh/").listFiles(!_.getName.contains("microCT")).sorted//.filter(_.getName.contains("9.1.81"))
+    val targetMeshes = new File(rawPath, "specified/crop/premolar2/mesh/").listFiles(!_.getName.contains("microCT")).sorted //.filter(_.getName.contains("9.1.81"))
     val lmPath = new File(rawPath, "specified/crop/premolar2/landmarks/")
 
     //    val meshFile = targetMeshes(0)
