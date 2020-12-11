@@ -18,7 +18,7 @@ package apps.molarSteps
 
 import java.io.File
 
-import apps.molar.Paths.{alignedPath, rawPath}
+import apps.molarSteps.Paths.{alignedPath, rawPath}
 import apps.util.AlignmentTransforms
 import scalismo.geometry.{Point3D, _3D}
 import scalismo.io.{LandmarkIO, MeshIO, StatisticalModelIO}

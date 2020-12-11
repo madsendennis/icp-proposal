@@ -2,7 +2,7 @@ package apps.molarSteps
 
 import java.io.File
 
-import apps.molar.Paths.rawPath
+import apps.molarSteps.Paths.rawPath
 import apps.util.AlignmentTransforms
 import breeze.linalg.DenseVector
 import scalismo.common.interpolation.TriangleMeshInterpolator3D

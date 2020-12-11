@@ -18,7 +18,7 @@ package apps.molarSteps
 
 import java.io.File
 
-import apps.molar.Paths.{alignedPath, rawPath}
+import apps.molarSteps.Paths.{alignedPath, rawPath}
 import apps.molarSteps.Step4_ComputePCAmodel.gpa
 import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.statisticalmodel.StatisticalMeshModel

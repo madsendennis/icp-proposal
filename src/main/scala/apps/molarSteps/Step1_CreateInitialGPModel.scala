@@ -18,7 +18,7 @@ package apps.molarSteps
 
 import java.io.File
 
-import apps.molar.Paths.rawPath
+import apps.molarSteps.Paths.rawPath
 import scalismo.common.interpolation.TriangleMeshInterpolator3D
 import scalismo.common.{EuclideanSpace, Field}
 import scalismo.geometry._

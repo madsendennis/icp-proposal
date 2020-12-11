@@ -18,8 +18,7 @@ package apps.molarSteps
 
 import java.io.File
 
-import apps.molar.Paths.alignedPath
-import apps.molarSteps.Paths.rawPath
+import apps.molarSteps.Paths.{rawPath, alignedPath}
 import apps.util.GeodesicHelper
 import breeze.linalg.{DenseVector, max}
 import breeze.numerics.tanh

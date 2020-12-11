@@ -18,7 +18,7 @@ package apps.molarSteps
 
 import java.io.File
 
-import apps.molar.Paths.{alignedPath, rawPath}
+import apps.molarSteps.Paths.{alignedPath, rawPath}
 import scalismo.common.DiscreteField
 import scalismo.common.interpolation.NearestNeighborInterpolator
 import scalismo.geometry._

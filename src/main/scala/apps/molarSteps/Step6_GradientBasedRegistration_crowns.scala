@@ -3,7 +3,7 @@ package apps.molarSteps
 import java.io.File
 import java.util.concurrent.ForkJoinPool
 
-import apps.molar.Paths.rawPath
+import apps.molarSteps.Paths.rawPath
 import apps.molarSteps.Paths.userHome
 import breeze.linalg.DenseVector
 import scalismo.io.{MeshIO, StatisticalModelIO}
